@@ -8,6 +8,7 @@ export class Server {
 
     const port = envs.PORT;
 
+    app.use(express.json());
     app.use(AppRoutes.routes);
 
     app.listen(port, () => {
