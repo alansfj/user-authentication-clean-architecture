@@ -1,3 +1,5 @@
+import { bcrypt } from "../../adapters/bcrypt";
+import { JWT } from "../../adapters/jwt";
 import { LoginUserDto } from "../../domain/dtos/login-user.dto";
 import { RegisterUserDto } from "../../domain/dtos/register-user.dto";
 import { UserEntity } from "../../domain/entities/user.entity";
@@ -52,10 +54,12 @@ export class AuthRepository implements AuthRepositoryInterface {
       if (user)
         throw CustomError.badRequest(`user with email ${email} already exists`);
 
+      const hashedPassword = bcrypt.hashPassword(password);
+
       const newUser = await prisma.user.create({
         data: {
           email,
-          password,
+          password: hashedPassword,
           name,
         },
       });
@@ -66,8 +70,36 @@ export class AuthRepository implements AuthRepositoryInterface {
     }
   }
 
-  async loginUser(dto: LoginUserDto): Promise<UserEntity> {
-    throw CustomError.badRequest("not implemented yet");
+  async loginUser(
+    dto: LoginUserDto
+  ): Promise<{ user: UserEntity; token: string }> {
+    try {
+      const { email, password } = dto;
+
+      const user = await prisma.user.findFirst({
+        where: {
+          email,
+        },
+      });
+
+      if (!user) throw CustomError.notFound(`user email or password wrong`);
+
+      const isCorrectPassword = bcrypt.comparePasswords(
+        password,
+        user.password
+      );
+
+      if (!isCorrectPassword)
+        throw CustomError.badRequest(`user email or password wrong`);
+
+      const token = await JWT.generateToken({ id: user.id, email: user.email });
+
+      if (!token) throw CustomError.internalServer("error creating jwt");
+
+      return { user: UserEntity.fromObjectWithoutPassword(user), token };
+    } catch (error) {
+      throw this.handleError(error);
+    }
   }
 
   private handleError(error: any): CustomError {

@@ -3,14 +3,14 @@ export class UserEntity {
     public readonly id: number,
     public readonly name: string,
     public readonly email: string,
-    public readonly isValidate: boolean,
+    public readonly isValidated: boolean,
     public readonly password?: string
   ) {}
 
   static fromObject(object: { [key: string]: any }): UserEntity {
-    const { id, name, email, isValidate, password } = object;
+    const { id, name, email, isValidated, password } = object;
 
-    return new UserEntity(id, name, email, isValidate, password);
+    return new UserEntity(id, name, email, isValidated, password);
   }
 
   static fromObjectWithoutPassword(object: { [key: string]: any }): UserEntity {

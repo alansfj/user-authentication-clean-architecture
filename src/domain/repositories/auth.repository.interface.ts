@@ -6,5 +6,5 @@ export interface AuthRepositoryInterface {
   getUserByEmail(email: string): Promise<UserEntity>;
   getUserById(id: number): Promise<UserEntity>;
   registeUser(dto: RegisterUserDto): Promise<UserEntity>;
-  loginUser(dto: LoginUserDto): Promise<UserEntity>;
+  loginUser(dto: LoginUserDto): Promise<{ user: UserEntity; token: string }>;
 }

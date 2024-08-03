@@ -24,8 +24,14 @@ export class AuthService implements AuthServiceInterface {
     }
   }
 
-  loginUser(dto: LoginUserDto): Promise<UserEntity> {
-    return this.authRepository.loginUser(dto);
+  async loginUser(
+    dto: LoginUserDto
+  ): Promise<{ user: UserEntity; token: string }> {
+    try {
+      return this.authRepository.loginUser(dto);
+    } catch (error) {
+      throw this.handleError(error);
+    }
   }
 
   private handleError(error: any): CustomError {
