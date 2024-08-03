@@ -1,3 +1,4 @@
+import { regularExps } from "../../utils/regular-expressions";
 import { CustomError } from "../errors/custom-error";
 
 export class RegisterUserDto {
@@ -18,11 +19,17 @@ export class RegisterUserDto {
     if (typeof email !== "string")
       return [CustomError.badRequest("email property must be a string")];
 
+    if (!regularExps.email.test(email))
+      return [CustomError.badRequest("email not valid")];
+
     if (!password)
       return [CustomError.badRequest("password property is required")];
 
     if (typeof password !== "string")
       return [CustomError.badRequest("password property must be a string")];
+
+    if (!regularExps.password.test(password))
+      return [CustomError.badRequest("password too short")];
 
     if (!confirmPassword)
       return [CustomError.badRequest("confirmPassword property is required")];

@@ -12,9 +12,8 @@ export class AuthController {
   registerUser = (req: Request, res: Response) => {
     const [error, registerUserDto] = RegisterUserDto.create(req.body);
 
-    if (error) {
-      res.status(error.statusCode).json({ error: error.message });
-    }
+    if (error)
+      return res.status(error.statusCode).json({ error: error.message });
 
     new RegisterUserUseCase(this.authService)
       .execute(registerUserDto!)
