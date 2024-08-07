@@ -5,6 +5,8 @@ import { RegisterUserUseCase } from "../../../domain/use-cases/register-user.use
 import { AuthServiceInterface } from "../../../domain/services/auth.service.interface";
 import { LoginUserDto } from "../../../domain/dtos/login-user.dto";
 import { LoginUserUseCase } from "../../../domain/use-cases/login-user.use-case";
+import { ValidateUserUseCase } from "../../../domain/use-cases/validate-user.use-case";
+import { ValidateUserDto } from "../../../domain/dtos/validate-user.dto";
 
 export class AuthController {
   constructor(private readonly authService: AuthServiceInterface) {}
@@ -38,8 +40,16 @@ export class AuthController {
   };
 
   validateUser = (req: Request, res: Response) => {
-    const { token } = req.params;
+    const [error, validaUserDto] = ValidateUserDto.create(req.params);
 
-    res.json("Validate");
+    if (error)
+      return res.status(error.statusCode).json({ error: error.message });
+
+    new ValidateUserUseCase(this.authService)
+      .execute(validaUserDto!)
+      .then((user) => res.json(user))
+      .catch((error: CustomError) =>
+        res.status(error.statusCode).json({ error: error.message })
+      );
   };
 }

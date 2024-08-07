@@ -1,5 +1,6 @@
 import { LoginUserDto } from "../dtos/login-user.dto";
 import { RegisterUserDto } from "../dtos/register-user.dto";
+import { ValidateUserDto } from "../dtos/validate-user.dto";
 import { UserEntity } from "../entities/user.entity";
 import { CustomError } from "../errors/custom-error";
 import { AuthRepositoryInterface } from "../repositories/auth.repository.interface";
@@ -31,6 +32,14 @@ export class AuthService implements AuthServiceInterface {
   ): Promise<{ user: UserEntity; token: string }> {
     try {
       return this.authRepository.loginUser(dto);
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async validateUser(dto: ValidateUserDto): Promise<UserEntity> {
+    try {
+      return await this.authRepository.validateUser(dto);
     } catch (error) {
       throw this.handleError(error);
     }

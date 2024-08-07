@@ -3,6 +3,7 @@ import { envs } from "../../adapters/envs";
 import { JWT } from "../../adapters/jwt";
 import { LoginUserDto } from "../../domain/dtos/login-user.dto";
 import { RegisterUserDto } from "../../domain/dtos/register-user.dto";
+import { ValidateUserDto } from "../../domain/dtos/validate-user.dto";
 import { UserEntity } from "../../domain/entities/user.entity";
 import { CustomError } from "../../domain/errors/custom-error";
 import { AuthRepositoryInterface } from "../../domain/repositories/auth.repository.interface";
@@ -112,6 +113,39 @@ export class AuthRepository implements AuthRepositoryInterface {
       if (!token) throw CustomError.internalServer("error creating jwt");
 
       return { user: UserEntity.fromObjectWithoutPassword(user), token };
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async validateUser(dto: ValidateUserDto): Promise<UserEntity> {
+    try {
+      const { token } = dto;
+
+      const payload = await JWT.validateToken(token);
+
+      if (!payload) throw CustomError.badRequest("invalid token");
+
+      const { email } = payload as { email: string };
+
+      if (!email) throw CustomError.badRequest("email not in token");
+
+      const user = await prisma.user.findFirst({
+        where: {
+          email,
+        },
+      });
+
+      if (!user) throw CustomError.badRequest("user not exist");
+
+      const updatedUser = await prisma.user.update({
+        data: { isValidated: true },
+        where: {
+          email: user.email,
+        },
+      });
+
+      return UserEntity.fromObjectWithoutPassword(updatedUser);
     } catch (error) {
       throw this.handleError(error);
     }
