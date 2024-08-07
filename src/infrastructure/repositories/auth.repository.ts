@@ -1,13 +1,17 @@
 import { bcrypt } from "../../adapters/bcrypt";
+import { envs } from "../../adapters/envs";
 import { JWT } from "../../adapters/jwt";
 import { LoginUserDto } from "../../domain/dtos/login-user.dto";
 import { RegisterUserDto } from "../../domain/dtos/register-user.dto";
 import { UserEntity } from "../../domain/entities/user.entity";
 import { CustomError } from "../../domain/errors/custom-error";
 import { AuthRepositoryInterface } from "../../domain/repositories/auth.repository.interface";
+import { EmailService } from "../../domain/services/email.service";
 import { prisma } from "../database/prisma-client";
 
 export class AuthRepository implements AuthRepositoryInterface {
+  constructor(private readonly emailService: EmailService) {}
+
   async getUserByEmail(email: string): Promise<UserEntity> {
     try {
       const user = await prisma.user.findFirst({
@@ -41,7 +45,9 @@ export class AuthRepository implements AuthRepositoryInterface {
     }
   }
 
-  async registeUser(dto: RegisterUserDto): Promise<UserEntity> {
+  async registeUser(
+    dto: RegisterUserDto
+  ): Promise<{ user: UserEntity; token: string }> {
     try {
       const { email, password, name } = dto;
 
@@ -64,7 +70,16 @@ export class AuthRepository implements AuthRepositoryInterface {
         },
       });
 
-      return UserEntity.fromObjectWithoutPassword(newUser);
+      const token = await JWT.generateToken({
+        id: newUser.id,
+        email: newUser.email,
+      });
+
+      if (!token) throw CustomError.internalServer("error creating jwt");
+
+      this.sendValidateUserEmail(newUser.email, token);
+
+      return { user: UserEntity.fromObjectWithoutPassword(newUser), token };
     } catch (error) {
       throw this.handleError(error);
     }
@@ -110,5 +125,29 @@ export class AuthRepository implements AuthRepositoryInterface {
     } else {
       return CustomError.unknow();
     }
+  }
+
+  private async sendValidateUserEmail(email: string, token: string) {
+    if (!token) throw CustomError.internalServer("error creating jwt");
+
+    const link = `${envs.WEBSERVICE_URL}/auth/validate-email/${token}`;
+
+    const htmlBody = `
+  
+    <h1>Validate your email</h1>
+    <p>Click on the following link to validate your account.</p>
+    <a href="${link}">Validate</a>
+    
+    `;
+
+    const isSent = await this.emailService.sendEmail({
+      to: email,
+      subject: "Validate your email",
+      htmlBody,
+    });
+
+    if (!isSent) throw CustomError.internalServer("error sending email");
+
+    return true;
   }
 }

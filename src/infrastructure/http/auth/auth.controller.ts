@@ -38,6 +38,8 @@ export class AuthController {
   };
 
   validateUser = (req: Request, res: Response) => {
-    res.json("validate");
+    const { token } = req.params;
+
+    res.json("Validate");
   };
 }

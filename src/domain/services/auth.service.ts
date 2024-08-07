@@ -16,7 +16,9 @@ export class AuthService implements AuthServiceInterface {
     return this.authRepository.getUserById(id);
   }
 
-  async registeUser(dto: RegisterUserDto): Promise<UserEntity> {
+  async registeUser(
+    dto: RegisterUserDto
+  ): Promise<{ user: UserEntity; token: string }> {
     try {
       return await this.authRepository.registeUser(dto);
     } catch (error) {
