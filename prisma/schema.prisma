@@ -19,4 +19,13 @@ model User {
   name        String  @db.VarChar()
   password    String  @db.VarChar()
   isValidated Boolean @default(false)
+  todos       Todo[]
+}
+
+model Todo {
+  id          Int     @id @default(autoincrement())
+  text        String  @unique
+  isCompleted Boolean @default(false)
+  user        User    @relation(fields: [userId], references: [id])
+  userId      Int     @unique
 }

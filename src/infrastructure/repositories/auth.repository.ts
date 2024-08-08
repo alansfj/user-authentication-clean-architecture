@@ -78,7 +78,7 @@ export class AuthRepository implements AuthRepositoryInterface {
 
       if (!token) throw CustomError.internalServer("error creating jwt");
 
-      this.sendValidateUserEmail(newUser.email, token);
+      await this.sendValidateUserEmail(newUser.email, token);
 
       return { user: UserEntity.fromObjectWithoutPassword(newUser), token };
     } catch (error) {
@@ -161,7 +161,10 @@ export class AuthRepository implements AuthRepositoryInterface {
     }
   }
 
-  private async sendValidateUserEmail(email: string, token: string) {
+  private async sendValidateUserEmail(
+    email: string,
+    token: string
+  ): Promise<boolean> {
     if (!token) throw CustomError.internalServer("error creating jwt");
 
     const link = `${envs.WEBSERVICE_URL}/auth/validate-email/${token}`;
