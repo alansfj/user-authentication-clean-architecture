@@ -9,7 +9,12 @@ import { TodosServiceInterface } from "./todos.service.interface";
 export class TodosService implements TodosServiceInterface {
   constructor(private readonly todosRepository: TodosRepositoryInterface) {}
 
-  async getTodos(paginationDto: PaginationDto): Promise<TodoEntity[]> {
+  async getTodos(paginationDto: PaginationDto): Promise<{
+    todos: TodoEntity[];
+    total: number;
+    prevPage: number | null;
+    nextPage: number | null;
+  }> {
     return await this.todosRepository.getTodos(paginationDto);
   }
 

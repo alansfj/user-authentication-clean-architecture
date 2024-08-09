@@ -7,16 +7,40 @@ import { TodosRepositoryInterface } from "../../domain/repositories/todos.reposi
 import { prisma } from "../database/prisma-client";
 
 export class TodosRepository implements TodosRepositoryInterface {
-  async getTodos(dto: PaginationDto): Promise<TodoEntity[]> {
+  async getTodos(dto: PaginationDto): Promise<{
+    todos: TodoEntity[];
+    total: number;
+    prevPage: number | null;
+    nextPage: number | null;
+  }> {
     try {
       const { page, limit } = dto;
 
-      const todos = await prisma.todo.findMany({
-        skip: page * limit - limit,
-        take: limit,
-      });
+      const [todosCount, todos] = await Promise.all([
+        prisma.todo.count(),
+        prisma.todo.findMany({
+          skip: page * limit - limit,
+          take: limit,
+        }),
+      ]);
 
-      return todos.map(TodoEntity.fromObject);
+      let prevPage: number | null = null;
+      let nextPage: number | null = null;
+
+      if (page !== 1) {
+        prevPage = page - 1;
+      }
+
+      if (page * limit <= todosCount) {
+        nextPage = page + 1;
+      }
+
+      return {
+        todos: todos.map(TodoEntity.fromObject),
+        total: todosCount,
+        prevPage: prevPage,
+        nextPage: nextPage,
+      };
     } catch (error) {
       throw this.handleError(error);
     }
