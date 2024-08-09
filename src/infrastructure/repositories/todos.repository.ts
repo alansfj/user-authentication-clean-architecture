@@ -1,36 +1,66 @@
 import { CreateTodoDto } from "../../domain/dtos/create-todo.dto";
+import { PaginationDto } from "../../domain/dtos/pagination.dto";
 import { TodoEntity } from "../../domain/entities/todo.entity";
+import { UserEntity } from "../../domain/entities/user.entity";
 import { CustomError } from "../../domain/errors/custom-error";
 import { TodosRepositoryInterface } from "../../domain/repositories/todos.repository.interface";
 import { prisma } from "../database/prisma-client";
 
 export class TodosRepository implements TodosRepositoryInterface {
-  async getTodos(): Promise<TodoEntity[]> {
-    const todos = await prisma.todo.findMany();
+  async getTodos(dto: PaginationDto): Promise<TodoEntity[]> {
+    try {
+      const { page, limit } = dto;
 
-    return todos.map(TodoEntity.fromObject);
+      const todos = await prisma.todo.findMany({
+        skip: page * limit - limit,
+        take: limit,
+      });
+
+      return todos.map(TodoEntity.fromObject);
+    } catch (error) {
+      throw this.handleError(error);
+    }
   }
 
   async getUserTodos(userId: number): Promise<TodoEntity[]> {
-    const todos = await prisma.todo.findMany({
-      where: {
-        userId,
-      },
-    });
+    try {
+      const todos = await prisma.todo.findMany({
+        where: {
+          userId,
+        },
+      });
 
-    return todos.map(TodoEntity.fromObject);
+      return todos.map(TodoEntity.fromObject);
+    } catch (error) {
+      throw this.handleError(error);
+    }
   }
 
-  async createTodo(dto: CreateTodoDto): Promise<TodoEntity> {
-    const { text } = dto;
+  async createTodo(dto: CreateTodoDto, user: UserEntity): Promise<TodoEntity> {
+    try {
+      const { text } = dto;
 
-    throw CustomError.internalServer("not implemented yet");
+      console.log(text);
 
-    // const createdTodo = await prisma.todo.create({
-    //   data: {
-    //     text,
-    //   },
-    // });
+      const todo = await prisma.todo.findFirst({
+        where: {
+          text,
+        },
+      });
+
+      if (todo) throw CustomError.badRequest("todo alredy exist");
+
+      const createdTodo = await prisma.todo.create({
+        data: {
+          text,
+          userId: user.id,
+        },
+      });
+
+      return TodoEntity.fromObject(createdTodo);
+    } catch (error) {
+      throw this.handleError(error);
+    }
   }
 
   private handleError(error: any): CustomError {
